@@ -7,14 +7,14 @@ import play.api.data._
 import play.api.data.Forms._
 import akka.actor.{TypedProps, TypedActor}
 import services.{AuthenticationServiceImpl, AuthenticationService, UsernamePasswordToken}
-import concurrent.{Promise, Future}
+import concurrent.Promise
 import controllers.helpers.FormHelpers.toExtendedForm
 
 object Home extends Controller {
 
   import play.api.Play.current
   import play.api.libs.concurrent.Akka
-  import play.api.libs.concurrent.Execution.Implicits._
+  import play.api.libs.concurrent.Execution.Implicits.defaultContext
 
   private val authenticationService: AuthenticationService =
     TypedActor(Akka.system).typedActorOf(TypedProps[AuthenticationServiceImpl]())
@@ -27,36 +27,30 @@ object Home extends Controller {
   )
 
   def form = Action {
-    formView(userForm)
+    loginFormView(userForm)
   }
 
   def submit = AsyncAction {
     implicit request =>
-      userForm.bindFromRequest.addValidation(userAuthenticated).flatMap {
-        form => form.fold(userNotFound, userFound)
-      }
+      for {
+        validatedForm <- userForm.bindFromRequest.addValidation(userAuthenticated)
+        result <- validatedForm.fold(userNotFound, userFound)
+      } yield result
   }
 
   private def userAuthenticated(form: Form[UsernamePasswordToken]) =
-    authenticationService.authenticate(form.get).map {
-      isAuthenticated =>
-        if (isAuthenticated)
-          form
-        else
-          form.withGlobalError("User invalid")
-    }
+    for {
+      isAuthenticated <- authenticationService.authenticate(form.get)
+    } yield if (isAuthenticated) form else form.withGlobalError("User invalid")
 
-  private def userNotFound(form: Form[UsernamePasswordToken]): Future[Result] =
-    Promise.successful(Ok(views.html.home.form(form))).future
+  private def userNotFound(form: Form[UsernamePasswordToken]) =
+    Promise.successful(loginFormView(form)).future
 
-  private def userFound(token: UsernamePasswordToken)(implicit request: Request[_]): Future[Result] =
-    authenticationService.authorize(token) map {
-      userCredentials =>
-        formView(userForm.fill(token)).withSession(
-          "sessionKey" -> userCredentials.sessionKey
-        )
-    }
+  private def userFound(token: UsernamePasswordToken)(implicit request: Request[_]) =
+    for {
+      userCredentials <- authenticationService.authorize(token)
+    } yield loginFormView(userForm.fill(token)).withSession("sessionKey" -> userCredentials.sessionKey)
 
-  def formView(form: Form[UsernamePasswordToken]): Result =
+  def loginFormView(form: Form[UsernamePasswordToken]) =
     Ok(views.html.home.form(form))
 }
