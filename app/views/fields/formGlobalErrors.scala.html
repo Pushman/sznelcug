@@ -1,0 +1,9 @@
+@(form: play.api.data.Form[_])
+
+@if(!form.globalErrors.isEmpty) {
+    <ul>
+    @for(error <- form.globalErrors) {
+        <li>@error.message</li>
+    }
+    </ul>
+}

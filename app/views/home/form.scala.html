@@ -1,0 +1,17 @@
+@(userForm: play.api.data.Form[services.UsernamePasswordToken])
+
+@import helper.twitterBootstrap._
+
+@main("Welcome to Play 2.0") {
+
+    @helper.form(action = routes.Home.submit) {
+        
+        @fields.formGlobalErrors(userForm)
+
+        @helper.inputText(userForm("username"))
+        
+        @helper.inputPassword(userForm("password"))
+        
+        @fields.submit("Wyślij")
+    }
+}
