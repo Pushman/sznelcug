@@ -16,7 +16,7 @@ class AuthenticationServiceImpl extends AuthenticationService {
 
   def authenticate(authenticationToken: AuthenticationToken) = authenticationToken match {
     case UsernamePasswordToken(username, password) =>
-      usersGateway.findUserBy(username = username, password = password).map(userOption => userOption.isDefined)
+      usersGateway.findBy(username = username, password = password).map(userOption => userOption.isDefined)
   }
 
   def authorize(authenticationToken: AuthenticationToken) =
