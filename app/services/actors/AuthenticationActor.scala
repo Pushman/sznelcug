@@ -3,22 +3,16 @@ package services.actors
 import akka.actor.{Status, ActorRef, Actor}
 import services.AuthenticationToken
 import java.util.UUID
-import akka.pattern.ask
 import akka.pattern.pipe
 import services.UsernamePasswordToken
 import services.UserCredentials
 import db.gateways.helpers.FetchAsync
 import org.squeryl.PrimitiveTypeMode._
 import domain.models.User
-import scala.concurrent.duration._
-import java.sql.Connection
-import akka.util.Timeout
 import concurrent.Future
 import util.{Failure, Success}
 
 class AuthenticationActor(val usersReadActor: ActorRef, val usersWriteActor: ActorRef, val controller: ActorRef) extends Actor {
-
-  import play.api.libs.concurrent.Execution.Implicits.defaultContext
 
   override def receive = {
     case AuthorizationCommand(UsernamePasswordToken(username, password)) =>
@@ -32,12 +26,6 @@ class AuthenticationActor(val usersReadActor: ActorRef, val usersWriteActor: Act
 
     case UserUpdated(u) =>
       controller ! AuthorizationSuccess(UsernamePasswordToken(u.username, u.password), UserCredentials(u.sessionKey))
-
-    case "ej" =>
-      controller ! AuthorizationSuccess(UsernamePasswordToken("ej", "jest "), UserCredentials("?"))
-
-    case any =>
-      controller ! AuthorizationSuccess(UsernamePasswordToken(any.toString, "jest "), UserCredentials("?"))
   }
 }
 
