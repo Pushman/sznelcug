@@ -8,13 +8,13 @@ import org.squeryl.PrimitiveTypeMode._
 
 object FetchAsync {
 
-  def apply[A](body: Connection => A)(implicit app: play.api.Application): Future[A] = Future {
+  private def withConnection[A](body: Connection => A)(implicit app: play.api.Application): Future[A] = Future {
     DB.withConnection {
       connection => body(connection)
     }
   }
 
-  def apply[A](body: => A)(implicit app: play.api.Application): Future[A] = FetchAsync {
+  def apply[A](body: => A)(implicit app: play.api.Application): Future[A] = withConnection {
     connection => {
       inTransaction(new H2SessionFactory(connection)) {
         body

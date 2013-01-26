@@ -1,6 +1,6 @@
 package services.actors
 
-import akka.actor.{ActorRef, Actor}
+import akka.actor.{Status, ActorRef, Actor}
 import services.AuthenticationToken
 import java.util.UUID
 import akka.pattern.ask
@@ -14,6 +14,7 @@ import scala.concurrent.duration._
 import java.sql.Connection
 import akka.util.Timeout
 import concurrent.Future
+import util.{Failure, Success}
 
 class AuthenticationActor(val usersReadActor: ActorRef, val usersWriteActor: ActorRef, val controller: ActorRef) extends Actor {
 
@@ -32,8 +33,11 @@ class AuthenticationActor(val usersReadActor: ActorRef, val usersWriteActor: Act
     case UserUpdated(u) =>
       controller ! AuthorizationSuccess(UsernamePasswordToken(u.username, u.password), UserCredentials(u.sessionKey))
 
+    case "ej" =>
+      controller ! AuthorizationSuccess(UsernamePasswordToken("ej", "jest "), UserCredentials("?"))
+
     case any =>
-      controller ! AuthorizationSuccess(UsernamePasswordToken("co", "jest "), UserCredentials("?"))
+      controller ! AuthorizationSuccess(UsernamePasswordToken(any.toString, "jest "), UserCredentials("?"))
   }
 }
 
@@ -61,12 +65,16 @@ class UsersWriteActor extends Actor {
 
   def receive = {
     case UpdateUser(user) => {
-      updateUser(user) pipeTo sender
+      val s = sender
+      updateUser(user) onComplete {
+        case Success(_) => s ! UserUpdated(user)
+        case Failure(f) => s ! Status.Failure(f)
+      }
     }
   }
 
   private def updateUser(user: User): Future[Unit] = FetchAsync {
-    connection: Connection => users.update(user)
+    users.update(user)
   }
 }
 

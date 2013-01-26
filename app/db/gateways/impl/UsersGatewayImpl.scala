@@ -5,7 +5,6 @@ import db.gateways.helpers.FetchAsync
 import org.squeryl.PrimitiveTypeMode._
 import domain.models.User
 import java.sql.Connection
-import org.squeryl.KeyedEntity
 import concurrent.Future
 
 class UsersGatewayImpl extends UsersGateway {
