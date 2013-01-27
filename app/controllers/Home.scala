@@ -1,5 +1,6 @@
 package controllers
 
+import _root_.helpers.LoggedActor
 import helpers.AsyncAction
 import helpers.AsyncAction._
 import play.api.mvc._
@@ -21,8 +22,7 @@ object Home extends Controller {
   import play.api.libs.concurrent.Akka
   import play.api.libs.concurrent.Execution.Implicits.defaultContext
 
-  private val usersReadActor = Akka.system.actorOf(Props[UsersReadModelActor]())
-  private val usersWriteActor = Akka.system.actorOf(Props[UsersWriteModelActor]())
+  val services: ActorRef = Akka.system.actorOf(Props(new ServicesActor), name = "services")
 
   private val userForm = Form(
     mapping(
@@ -45,7 +45,7 @@ object Home extends Controller {
 
   def formValid(token: UsernamePasswordToken): Future[Result] = {
     implicit val timeout = Timeout(5 seconds)
-    Akka.system.actorOf(Props(new AuthenticationActor(usersReadActor, usersWriteActor))) ? AuthorizationCommand(token) collect {
+    Akka.system.actorOf(Props(new AuthenticationActor)) ? AuthorizationCommand(token) collect {
       case AuthorizationSuccess(userCredentials) =>
         authorizationSuccess(token, userCredentials)
       case AuthorizationFailure() =>
@@ -56,7 +56,7 @@ object Home extends Controller {
   def authorizationSuccess(token: UsernamePasswordToken, userCredentials: UserCredentials) =
     loginView(userForm.fill(token)).withSession("sessionKey" -> userCredentials.sessionKey)
 
-  def authorizationFailure(token: UsernamePasswordToken) = 
+  def authorizationFailure(token: UsernamePasswordToken) =
     loginView(userForm.fill(token).withGlobalError("User invalid"))
 
   private def loginView(form: Form[UsernamePasswordToken]) =
