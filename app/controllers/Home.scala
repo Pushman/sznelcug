@@ -10,7 +10,7 @@ import akka.pattern.ask
 import concurrent.{Future, Promise}
 import concurrent.duration._
 import services.actors._
-import services.UsernamePasswordToken
+import services.{UserCredentials, UsernamePasswordToken}
 import services.actors.AuthorizationSuccess
 import services.actors.AuthorizationCommand
 import services.actors.AuthorizationFailure
@@ -33,30 +33,33 @@ object Home extends Controller {
   )
 
   def form = Action {
-    loginFormView(userForm)
+    loginView(userForm)
   }
 
   def submit = AsyncAction {
     implicit request =>
-      userForm.bindFromRequest.fold(
-        userNotFound,
-        formValid
-      )
+      userForm.bindFromRequest.fold(formInvalid, formValid)
   }
+
+  private def formInvalid(form: Form[UsernamePasswordToken]) =
+    Promise.successful(loginView(form)).future
 
   def formValid(token: UsernamePasswordToken): Future[Result] = {
     implicit val timeout = Timeout(5 seconds)
     Akka.system.actorOf(Props(new AuthenticationActor(usersReadActor, usersWriteActor))) ? AuthorizationCommand(token) collect {
-      case AuthorizationFailure() =>
-        loginFormView(userForm.fill(token).withGlobalError("User invalid"))
       case AuthorizationSuccess(userCredentials) =>
-        loginFormView(userForm.fill(token)).withSession("sessionKey" -> userCredentials.sessionKey)
+        authorizationSuccess(token, userCredentials)
+      case AuthorizationFailure() =>
+        authorizationFailure(token)
     }
   }
 
-  private def userNotFound(form: Form[UsernamePasswordToken]) =
-    Promise.successful(loginFormView(form)).future
+  def authorizationSuccess(token: UsernamePasswordToken, userCredentials: UserCredentials) =
+    loginView(userForm.fill(token)).withSession("sessionKey" -> userCredentials.sessionKey)
 
-  private def loginFormView(form: Form[UsernamePasswordToken]) =
+  def authorizationFailure(token: UsernamePasswordToken) = 
+    loginView(userForm.fill(token).withGlobalError("User invalid"))
+
+  private def loginView(form: Form[UsernamePasswordToken]) =
     Ok(views.html.home.form(form))
 }
