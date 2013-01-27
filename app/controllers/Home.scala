@@ -1,6 +1,5 @@
 package controllers
 
-import _root_.helpers.LoggedActor
 import helpers.AsyncAction
 import helpers.AsyncAction._
 import play.api.mvc._
@@ -21,8 +20,12 @@ object Home extends Controller {
   import play.api.Play.current
   import play.api.libs.concurrent.Akka
   import play.api.libs.concurrent.Execution.Implicits.defaultContext
+  
+  val provider = new DefaultActorProvider with HasContext {
+    def context = Akka.system
+  }
 
-  val services: ActorRef = Akka.system.actorOf(Props(new ServicesActor), name = ServicesActor.actorName)
+  val services: ActorRef = provider.createActor(classOf[ServicesActor])
 
   private val userForm = Form(
     mapping(
@@ -45,7 +48,7 @@ object Home extends Controller {
 
   def formValid(token: UsernamePasswordToken): Future[Result] = {
     implicit val timeout = Timeout(5 seconds)
-    Akka.system.actorOf(Props(new AuthenticationActor)) ? AuthorizationCommand(token) collect {
+    provider.createActor(classOf[AuthenticationActor]) ? AuthorizationCommand(token) collect {
       case AuthorizationSuccess(userCredentials) =>
         authorizationSuccess(token, userCredentials)
       case AuthorizationFailure() =>

@@ -5,11 +5,12 @@ import java.util.UUID
 import domain.models.User
 
 class AuthenticationActor extends Actor {
+  provider: ActorProvider =>
 
   import context.{become, unbecome}
 
-  val usersReadActor = context.actorFor(UsersReadModelActor.actorPath)
-  val usersWriteActor = context.actorFor(UsersWriteModelActor.actorPath)
+  val usersReadActor = provider.actorFor(classOf[UsersReadModelActor])
+  val usersWriteActor = provider.actorFor(classOf[UsersWriteModelActor])
 
   override def receive = {
     case command@AuthorizationCommand(UsernamePasswordToken(username, password)) => {

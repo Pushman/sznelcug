@@ -1,20 +1,12 @@
 package services.actors
 
-import akka.actor.{ActorPath, ChildActorPath, Props, Actor}
-import helpers.LoggedActor
-import akka.routing.RoundRobinRouter
-
-
-object ServicesActor {
-
-  def actorName: String = "services"
-  def actorPath: String = "/user/" + actorName
-}
+import akka.actor.Actor
 
 class ServicesActor extends Actor {
+  provider: ActorProvider =>
 
-  context.actorOf(Props(new UsersReadModelActor with LoggedActor).withRouter(new RoundRobinRouter(0)), name = "usersReadModelActor")
-  context.actorOf(Props(new UsersWriteModelActor).withRouter(new RoundRobinRouter(0)), name = "usersWriteModelActor")
+  provider.createActor(classOf[UsersReadModelActor])
+  provider.createActor(classOf[UsersWriteModelActor])
 
   override def receive: Receive = Actor.emptyBehavior
 }

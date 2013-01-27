@@ -6,10 +6,6 @@ import domain.models.User
 import concurrent.Future
 import db.gateways.helpers.FetchAsync
 
-object UsersWriteModelActor {
-  def actorPath = ServicesActor.actorPath + "/usersWriteModelActor"
-}
-
 class UsersWriteModelActor extends Actor {
 
   import play.api.Play.current

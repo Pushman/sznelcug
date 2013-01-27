@@ -2,13 +2,9 @@ package services.actors
 
 import akka.pattern.pipe
 import org.squeryl.PrimitiveTypeMode._
-import akka.actor.{ActorPath, Actor}
+import akka.actor.Actor
 import domain.models.User
 import db.gateways.helpers.FetchAsync
-
-object UsersReadModelActor {
-  def actorPath = ServicesActor.actorPath + "/usersReadModelActor"
-}
 
 class UsersReadModelActor extends Actor {
 
