@@ -6,12 +6,15 @@ import play.api.mvc._
 import play.api.data._
 import play.api.data.Forms._
 import akka.actor._
+import akka.pattern.ask
 import concurrent.{Future, Promise}
+import concurrent.duration._
 import services.actors._
 import services.UsernamePasswordToken
 import services.actors.AuthorizationSuccess
 import services.actors.AuthorizationCommand
 import services.actors.AuthorizationFailure
+import akka.util.Timeout
 
 object Home extends Controller {
 
@@ -42,20 +45,12 @@ object Home extends Controller {
   }
 
   def formValid(token: UsernamePasswordToken): Future[Result] = {
-    val promise = Promise[Result]()
-    Akka.system.actorOf(Props(new ControllerActor(promise, token))) ! AuthorizationCommand(token)
-    promise.future
-  }
-
-  class ControllerActor(promise: Promise[Result], token: UsernamePasswordToken) extends Actor {
-
-    def receive = {
-      case command: AuthorizationCommand =>
-        Akka.system.actorOf(Props(new AuthenticationActor(usersReadActor, usersWriteActor, self))) ! command
+    implicit val timeout = Timeout(5 seconds)
+    Akka.system.actorOf(Props(new AuthenticationActor(usersReadActor, usersWriteActor))) ? AuthorizationCommand(token) collect {
       case AuthorizationFailure() =>
-        promise.success(loginFormView(userForm.fill(token).withGlobalError("User invalid")))
+        loginFormView(userForm.fill(token).withGlobalError("User invalid"))
       case AuthorizationSuccess(userCredentials) =>
-        promise.success(loginFormView(userForm.fill(token)).withSession("sessionKey" -> userCredentials.sessionKey))
+        loginFormView(userForm.fill(token)).withSession("sessionKey" -> userCredentials.sessionKey)
     }
   }
 

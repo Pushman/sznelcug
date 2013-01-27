@@ -5,22 +5,36 @@ import services.AuthenticationToken
 import java.util.UUID
 import services.UsernamePasswordToken
 import services.UserCredentials
+import domain.models.User
 
-class AuthenticationActor(val usersReadModel: ActorRef, val usersWriteModel: ActorRef, val controller: ActorRef) extends Actor {
+class AuthenticationActor(val usersReadModel: ActorRef, val usersWriteModel: ActorRef) extends Actor {
+
+  import context.{become, unbecome}
 
   override def receive = {
-    case AuthorizationCommand(UsernamePasswordToken(username, password)) =>
+    case AuthorizationCommand(UsernamePasswordToken(username, password)) => {
+      become(processingAuthentication(sender))
       usersReadModel ! ReadUser(UserLookup(username, password))
-
-    case UserFound(user) =>
-      usersWriteModel ! UpdateUser(user.update(sessionKey = UUID.randomUUID().toString))
-
-    case UserNotFound(UserLookup(username, password)) =>
-      controller ! AuthorizationFailure()
-
-    case UserUpdated(u) =>
-      controller ! AuthorizationSuccess(UserCredentials(u.sessionKey))
+    }
   }
+
+  private def processingAuthentication(replyTo: ActorRef): Receive = {
+    case UserFound(user) =>
+      usersWriteModel ! UpdateUser(newSessionKeyFor(user))
+
+    case UserNotFound(UserLookup(username, password)) => {
+      unbecome()
+      replyTo ! AuthorizationFailure()
+    }
+
+    case UserUpdated(u) => {
+      unbecome()
+      replyTo ! AuthorizationSuccess(UserCredentials(u.sessionKey))
+    }
+  }
+
+  def newSessionKeyFor(user: User) =
+    user.update(sessionKey = UUID.randomUUID().toString)
 }
 
 case class AuthorizationCommand(token: AuthenticationToken)
