@@ -19,8 +19,8 @@ object Home extends Controller {
   import play.api.libs.concurrent.Akka
   import play.api.libs.concurrent.Execution.Implicits.defaultContext
 
-  private val usersReadActor = Akka.system.actorOf(Props[UsersReadModel]())
-  private val usersWriteActor = Akka.system.actorOf(Props[UsersWriteActor]())
+  private val usersReadActor = Akka.system.actorOf(Props[UsersReadModelActor]())
+  private val usersWriteActor = Akka.system.actorOf(Props[UsersWriteModelActor]())
 
   private val userForm = Form(
     mapping(
@@ -43,19 +43,19 @@ object Home extends Controller {
 
   def formValid(token: UsernamePasswordToken): Future[Result] = {
     val promise = Promise[Result]()
-    Akka.system.actorOf(Props(new ControllerActor(promise))) ! AuthorizationCommand(token)
+    Akka.system.actorOf(Props(new ControllerActor(promise, token))) ! AuthorizationCommand(token)
     promise.future
   }
 
-  class ControllerActor(promise: Promise[Result]) extends Actor {
+  class ControllerActor(promise: Promise[Result], token: UsernamePasswordToken) extends Actor {
 
     def receive = {
       case command: AuthorizationCommand =>
         Akka.system.actorOf(Props(new AuthenticationActor(usersReadActor, usersWriteActor, self))) ! command
-      case AuthorizationFailure(t: UsernamePasswordToken) =>
-        promise.success(loginFormView(userForm.fill(t).withGlobalError("User invalid")))
-      case AuthorizationSuccess(t: UsernamePasswordToken, userCredentials) =>
-        promise.success(loginFormView(userForm.fill(t)).withSession("sessionKey" -> userCredentials.sessionKey))
+      case AuthorizationFailure() =>
+        promise.success(loginFormView(userForm.fill(token).withGlobalError("User invalid")))
+      case AuthorizationSuccess(userCredentials) =>
+        promise.success(loginFormView(userForm.fill(token)).withSession("sessionKey" -> userCredentials.sessionKey))
     }
   }
 
