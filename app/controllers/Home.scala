@@ -22,7 +22,7 @@ object Home extends Controller {
   import play.api.libs.concurrent.Akka
   import play.api.libs.concurrent.Execution.Implicits.defaultContext
 
-  val services: ActorRef = Akka.system.actorOf(Props(new ServicesActor), name = "services")
+  val services: ActorRef = Akka.system.actorOf(Props(new ServicesActor), name = ServicesActor.actorName)
 
   private val userForm = Form(
     mapping(

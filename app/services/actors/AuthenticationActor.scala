@@ -3,16 +3,14 @@ package services.actors
 import akka.actor.{ActorRef, Actor}
 import java.util.UUID
 import domain.models.User
-import play.api.libs.concurrent.Akka
 
 class AuthenticationActor extends Actor {
 
-  import play.api.Play.current
   import context.{become, unbecome}
-  
-  val usersReadActor = Akka.system.actorFor("user/services/usersReadModelActor")
-  val usersWriteActor = Akka.system.actorFor("user/services/usersWriteModelActor")
-  
+
+  val usersReadActor = context.actorFor(UsersReadModelActor.actorPath)
+  val usersWriteActor = context.actorFor(UsersWriteModelActor.actorPath)
+
   override def receive = {
     case command@AuthorizationCommand(UsernamePasswordToken(username, password)) => {
       become(processingAuthentication(sender))

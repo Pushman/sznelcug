@@ -1,8 +1,15 @@
 package services.actors
 
-import akka.actor.{Props, Actor}
+import akka.actor.{ActorPath, ChildActorPath, Props, Actor}
 import helpers.LoggedActor
 import akka.routing.RoundRobinRouter
+
+
+object ServicesActor {
+
+  def actorName: String = "services"
+  def actorPath: String = "/user/" + actorName
+}
 
 class ServicesActor extends Actor {
 
