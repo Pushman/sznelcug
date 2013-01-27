@@ -10,7 +10,6 @@ import akka.pattern.ask
 import concurrent.{Future, Promise}
 import concurrent.duration._
 import services.actors._
-import services.{UserCredentials, UsernamePasswordToken}
 import services.actors.AuthorizationSuccess
 import services.actors.AuthorizationCommand
 import services.actors.AuthorizationFailure

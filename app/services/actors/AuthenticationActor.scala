@@ -1,10 +1,7 @@
 package services.actors
 
 import akka.actor.{ActorRef, Actor}
-import services.AuthenticationToken
 import java.util.UUID
-import services.UsernamePasswordToken
-import services.UserCredentials
 import domain.models.User
 
 class AuthenticationActor(val usersReadModel: ActorRef, val usersWriteModel: ActorRef) extends Actor {
@@ -36,6 +33,13 @@ class AuthenticationActor(val usersReadModel: ActorRef, val usersWriteModel: Act
   def newSessionKeyFor(user: User) =
     user.update(sessionKey = UUID.randomUUID().toString)
 }
+
+
+trait AuthenticationToken
+
+case class UsernamePasswordToken(username: String, password: String) extends AuthenticationToken
+
+case class UserCredentials(sessionKey: String)
 
 case class AuthorizationCommand(token: AuthenticationToken)
 
