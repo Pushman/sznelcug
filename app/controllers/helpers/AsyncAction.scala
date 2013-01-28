@@ -13,7 +13,7 @@ object AsyncAction {
 
   implicit def timeout: FiniteDuration = 2.seconds
 
-  implicit def onTimeout: Result = RequestTimeout(s"Unable to complete action in $timeout")
+  implicit def onTimeout: Result = RequestTimeout(s"Unable sender complete action in $timeout")
 
   implicit def requestTimeout(timeout: FiniteDuration, onTimeout: Result): Future[Result] =
     after(timeout, Akka.system.scheduler) {

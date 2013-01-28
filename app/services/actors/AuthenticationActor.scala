@@ -4,34 +4,24 @@ import akka.actor.{ActorRef, Actor}
 import java.util.UUID
 import domain.models.User
 
-class AuthenticationActor extends Actor {
+class AuthenticationActor(replyTo: ActorRef) extends Actor {
   provider: ActorProvider =>
-
-  import context.{become, unbecome}
 
   val usersReadActor = provider.actorFor(classOf[UsersReadModelActor])
   val usersWriteActor = provider.actorFor(classOf[UsersWriteModelActor])
 
   override def receive = {
-    case command@AuthorizationCommand(UsernamePasswordToken(username, password)) => {
-      become(processingAuthentication(sender))
+    case command@AuthorizationCommand(UsernamePasswordToken(username, password)) =>
       usersReadActor ! ReadUser(UserLookup(username, password))
-    }
-  }
 
-  private def processingAuthentication(replyTo: ActorRef): Receive = {
     case UserFound(user) =>
       usersWriteActor ! UpdateUser(newSessionKeyFor(user))
 
-    case UserNotFound(UserLookup(username, password)) => {
-      unbecome()
+    case UserNotFound(UserLookup(username, password)) =>
       replyTo ! AuthorizationFailure()
-    }
 
-    case UserUpdated(u) => {
-      unbecome()
+    case UserUpdated(u) =>
       replyTo ! AuthorizationSuccess(UserCredentials(u.sessionKey))
-    }
   }
 
   def newSessionKeyFor(user: User) =

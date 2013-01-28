@@ -46,10 +46,12 @@ trait DefaultActorsConfiguration extends ActorsConfiguration {
 
   private def actors = {
     Map[Class[_ <: Actor], (String, Option[String], Props)](
-      (classOf[ServicesActor] ->("services", Some("services"), Props(new ServicesActor with DefaultActorProvider with HasContext))),
-      (classOf[UsersReadModelActor] ->("/user/services/usersReadModelActor", Some("usersReadModelActor"), Props(new UsersReadModelActor).withRouter(defaultRouter))),
-      (classOf[UsersWriteModelActor] ->("/user/services/usersWriteModelActor", Some("usersWriteModelActor"), Props(new UsersWriteModelActor))),
-      (classOf[AuthenticationActor] ->("", None, Props(new AuthenticationActor with DefaultActorProvider with HasContext)))
+      (classOf[ServicesActor] ->("services", Some("services"),
+        Props(new ServicesActor with DefaultActorProvider with HasContext))),
+      (classOf[UsersReadModelActor] ->("/user/services/usersReadModelActor", Some("usersReadModelActor"),
+        Props(new UsersReadModelActor).withRouter(defaultRouter))),
+      (classOf[UsersWriteModelActor] ->("/user/services/usersWriteModelActor", Some("usersWriteModelActor"),
+        Props(new UsersWriteModelActor)))
     )
   }
 
