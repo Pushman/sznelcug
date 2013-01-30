@@ -1,33 +1,39 @@
 package services.actors
 
-import akka.actor.{ActorRef, Actor}
+import akka.actor.{Props, ActorRef, Actor}
 import java.util.UUID
 import domain.models.User
+import helpers.ChildDispatcher
 
-class AuthenticationActor(replyTo: ActorRef) extends Actor {
-  provider: ActorProvider =>
+class AuthenticationActor extends Actor with ChildDispatcher {
+  provider: Actor with ActorProvider =>
 
   val usersReadActor = provider.actorFor(classOf[UsersReadModelActor])
   val usersWriteActor = provider.actorFor(classOf[UsersWriteModelActor])
 
-  override def receive = {
-    case command@AuthorizationCommand(UsernamePasswordToken(username, password)) =>
-      usersReadActor ! ReadUser(UserLookup(username, password))
+  override def receive = dispatchToChild(replyTo => Props(new AuthenticationActorChild(replyTo)))
 
-    case UserFound(user) =>
-      usersWriteActor ! UpdateUser(newSessionKeyFor(user))
+  case class AuthenticationActorChild(replyTo: ActorRef) extends Actor {
 
-    case UserNotFound(UserLookup(username, password)) =>
-      replyTo ! AuthorizationFailure()
+    override def receive = {
+      case AuthorizationCommand(UsernamePasswordToken(username, password)) =>
+        usersReadActor ! ReadUser(UserLookup(username, password))
 
-    case UserUpdated(u) =>
-      replyTo ! AuthorizationSuccess(UserCredentials(u.sessionKey))
+      case UserFound(user) =>
+        usersWriteActor ! UpdateUser(newSessionKeyFor(user))
+
+      case UserNotFound(UserLookup(username, password)) =>
+        replyTo ! AuthorizationFailure()
+
+      case UserUpdated(u) =>
+        replyTo ! AuthorizationSuccess(UserCredentials(u.sessionKey))
+    }
+
+    def newSessionKeyFor(user: User) =
+      user.update(sessionKey = UUID.randomUUID().toString)
   }
 
-  def newSessionKeyFor(user: User) =
-    user.update(sessionKey = UUID.randomUUID().toString)
 }
-
 
 trait AuthenticationToken
 

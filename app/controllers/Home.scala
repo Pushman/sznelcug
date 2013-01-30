@@ -1,18 +1,18 @@
 package controllers
 
-import _root_.helpers.ActorUtils.withActor
-import _root_.helpers.LoggedActor
 import helpers.AsyncAction
 import helpers.AsyncAction._
 import play.api.mvc._
 import play.api.data._
 import play.api.data.Forms._
-import akka.actor._
 import concurrent.{Future, Promise}
 import services.actors._
 import services.actors.AuthorizationSuccess
 import services.actors.AuthorizationCommand
 import services.actors.AuthorizationFailure
+
+import akka.pattern.ask
+import concurrent.duration._
 
 object Home extends Controller {
 
@@ -20,14 +20,11 @@ object Home extends Controller {
   import play.api.libs.concurrent.Akka
   import play.api.libs.concurrent.Execution.Implicits.defaultContext
 
-  def withAuthenticationActor =
-    withActor(actor => Akka.system.actorOf(Props(new AuthenticationActor(actor) with DefaultActorProvider with HasContext with LoggedActor))) _
-
   val provider = new DefaultActorProvider with HasContext {
     def context = Akka.system
   }
 
-  val services: ActorRef = provider.createActor(classOf[ServicesActor])
+  provider.createActor(classOf[ServicesActor])
 
   private val userForm = Form(
     mapping(
@@ -48,11 +45,14 @@ object Home extends Controller {
   private def formInvalid(form: Form[UsernamePasswordToken]) =
     Promise.successful(loginView(form)).future
 
-  def formValid(token: UsernamePasswordToken): Future[Result] = withAuthenticationActor(AuthorizationCommand(token)) collect {
-    case AuthorizationSuccess(userCredentials) =>
-      authorizationSuccess(token, userCredentials)
-    case AuthorizationFailure() =>
-      authorizationFailure(token)
+  def formValid(token: UsernamePasswordToken): Future[Result] = {
+    implicit val timeout = akka.util.Timeout(5 seconds)
+    provider.actorFor(classOf[AuthenticationActor]) ? AuthorizationCommand(token) collect {
+      case AuthorizationSuccess(userCredentials) =>
+        authorizationSuccess(token, userCredentials)
+      case AuthorizationFailure() =>
+        authorizationFailure(token)
+    }
   }
 
   def authorizationSuccess(token: UsernamePasswordToken, userCredentials: UserCredentials) =

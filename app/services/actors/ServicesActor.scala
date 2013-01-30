@@ -7,6 +7,7 @@ class ServicesActor extends Actor {
 
   provider.createActor(classOf[UsersReadModelActor])
   provider.createActor(classOf[UsersWriteModelActor])
+  provider.createActor(classOf[AuthenticationActor])
 
   override def receive: Receive = Actor.emptyBehavior
 }

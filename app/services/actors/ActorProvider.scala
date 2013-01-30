@@ -34,12 +34,6 @@ trait DefaultActorProvider extends ActorProvider with DefaultActorsConfiguration
     nameFor(clazz).map(name => context.actorOf(propsFor(clazz), name)).getOrElse(context.actorOf(propsFor(clazz)))
 }
 
-trait ActorAsContextProvider extends HasContext {
-  actor: Actor =>
-
-  override def context = actor.context
-}
-
 trait DefaultActorsConfiguration extends ActorsConfiguration {
 
   private def defaultRouter: RoundRobinRouter = new RoundRobinRouter(1)
@@ -51,7 +45,9 @@ trait DefaultActorsConfiguration extends ActorsConfiguration {
       (classOf[UsersReadModelActor] ->("/user/services/usersReadModelActor", Some("usersReadModelActor"),
         Props(new UsersReadModelActor).withRouter(defaultRouter))),
       (classOf[UsersWriteModelActor] ->("/user/services/usersWriteModelActor", Some("usersWriteModelActor"),
-        Props(new UsersWriteModelActor)))
+        Props(new UsersWriteModelActor))),
+      (classOf[AuthenticationActor] ->("/user/services/authenticationActor", Some("authenticationActor"),
+        Props(new AuthenticationActor with DefaultActorProvider with HasContext)))
     )
   }
 
