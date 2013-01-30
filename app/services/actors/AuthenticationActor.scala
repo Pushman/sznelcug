@@ -1,17 +1,19 @@
 package services.actors
 
-import akka.actor.{Props, ActorRef, Actor}
+import akka.actor.{ActorRef, Actor}
 import java.util.UUID
 import domain.models.User
 import helpers.ChildDispatcher
+import concurrent.duration._
 
 class AuthenticationActor extends Actor with ChildDispatcher {
   provider: Actor with ActorProvider =>
 
   val usersReadActor = provider.actorFor(classOf[UsersReadModelActor])
   val usersWriteActor = provider.actorFor(classOf[UsersWriteModelActor])
+  implicit val timeout = (5 seconds)
 
-  override def receive = dispatchToChild(replyTo => Props(new AuthenticationActorChild(replyTo)))
+  override def receive = dispatchToChild(AuthenticationActorChild.apply)
 
   case class AuthenticationActorChild(replyTo: ActorRef) extends Actor {
 
