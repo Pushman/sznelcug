@@ -5,7 +5,6 @@ import helpers.AsyncAction._
 import play.api.mvc._
 import play.api.data._
 import play.api.data.Forms._
-import akka.actor._
 import concurrent.{Future, Promise}
 import services.actors._
 import services.actors.AuthorizationSuccess

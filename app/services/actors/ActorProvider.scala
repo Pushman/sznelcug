@@ -17,55 +17,45 @@ trait ActorProvider {
 
 trait ActorsConfiguration {
 
-  def propsFor(clazz: Class[_ <: Actor]): Props
+  case class ActorDetails(path: String, name: Option[String], props: Props)
 
-  def nameFor(clazz: Class[_ <: Actor]): Option[String]
-
-  def pathFor(clazz: Class[_ <: Actor]): String
+  def actorDetails(clazz: Class[_ <: Actor]): Option[ActorDetails]
 }
 
-trait DefaultActorProvider extends ActorProvider with DefaultActorsConfiguration {
-  this: HasContext =>
+trait ConfigurableActorProvider extends ActorProvider with HasContext with ActorsConfiguration {
 
   override def actorFor(clazz: Class[_ <: Actor]) =
     context.actorFor(pathFor(clazz))
 
   override def createActor(clazz: Class[_ <: Actor]) =
     nameFor(clazz).map(name => context.actorOf(propsFor(clazz), name)).getOrElse(context.actorOf(propsFor(clazz)))
+
+  private def nameFor = getFromConfiguration(_.name) _
+
+  private def pathFor = getFromConfiguration(_.path) _
+
+  private def propsFor = getFromConfiguration(_.props) _
+
+  private def getFromConfiguration[A](mapper: ActorDetails => A)(clazz: Class[_ <: Actor]): A =
+    actorDetails(clazz).map(mapper).getOrElse(throw new IllegalStateException(clazz.toString))
 }
+
+trait DefaultActorProvider extends ConfigurableActorProvider with DefaultActorsConfiguration
 
 trait DefaultActorsConfiguration extends ActorsConfiguration {
 
   private def defaultRouter: RoundRobinRouter = new RoundRobinRouter(1)
 
-  private def actors = {
-    Map[Class[_ <: Actor], (String, Option[String], Props)](
-      (classOf[ServicesActor] ->("services", Some("services"),
-        Props(new ServicesActor with DefaultActorProvider with HasContext))),
-      (classOf[UsersReadModelActor] ->("/user/services/usersReadModelActor", Some("usersReadModelActor"),
+  override def actorDetails(clazz: Class[_ <: Actor]) = {
+    Map[Class[_ <: Actor], ActorDetails](
+      (classOf[ServicesActor] -> ActorDetails("services", Some("services"),
+        Props(new ServicesActor with DefaultActorProvider))),
+      (classOf[UsersReadModelActor] -> ActorDetails("/user/services/usersReadModelActor", Some("usersReadModelActor"),
         Props(new UsersReadModelActor).withRouter(defaultRouter))),
-      (classOf[UsersWriteModelActor] ->("/user/services/usersWriteModelActor", Some("usersWriteModelActor"),
+      (classOf[UsersWriteModelActor] -> ActorDetails("/user/services/usersWriteModelActor", Some("usersWriteModelActor"),
         Props(new UsersWriteModelActor))),
-      (classOf[AuthenticationActor] ->("/user/services/authenticationActor", Some("authenticationActor"),
-        Props(new AuthenticationActor with DefaultActorProvider with HasContext)))
-    )
+      (classOf[AuthenticationActor] -> ActorDetails("/user/services/authenticationActor", Some("authenticationActor"),
+        Props(new AuthenticationActor with DefaultActorProvider)))
+    ).get(clazz)
   }
-
-
-  override def propsFor(clazz: Class[_ <: Actor]) = {
-    actors.get(clazz).collect {
-      case (path, name, creator) => creator
-    }.getOrElse(throw new IllegalStateException(clazz.toString))
-  }
-
-  override def nameFor(clazz: Class[_ <: Actor]) = {
-    actors.get(clazz).collect {
-      case (path, name, creator) => name
-    }.getOrElse(throw new IllegalStateException(clazz.toString))
-  }
-
-  override def pathFor(clazz: Class[_ <: Actor]) =
-    actors.get(clazz).collect {
-      case (path, name, creator) => path
-    }.getOrElse(throw new IllegalStateException(clazz.toString))
 }
