@@ -17,20 +17,20 @@ class AuthenticationActor extends Actor {
   implicit val timeout = akka.util.Timeout(5 seconds)
 
   override def receive = {
-    case AuthorizationCommand(UsernamePasswordToken(username, password)) =>
+    case AuthorizationCommand(UsernamePasswordToken(username, password)) ⇒
       usersReadActor ? ReadUser(UserLookup(username, password)) collect readUser(sender)
   }
 
   private def readUser(replyTo: ActorRef): Receive = {
-    case UserNotFound(_) =>
+    case UserNotFound(_) ⇒
       replyTo ! AuthorizationFailure()
 
-    case UserFound(user) =>
+    case UserFound(user) ⇒
       usersWriteActor ? UpdateUser(newSessionKeyFor(user)) collect userUpdated(replyTo)
   }
 
   private def userUpdated(replyTo: ActorRef): Receive = {
-    case UserUpdated(user) =>
+    case UserUpdated(user) ⇒
       replyTo ! AuthorizationSuccess(UserCredentials(user.sessionKey))
   }
 

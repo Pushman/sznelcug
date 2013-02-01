@@ -15,14 +15,14 @@ trait ActorProvider {
   def createActor(clazz: Class[_ <: Actor]): ActorRef
 }
 
-trait ActorsConfiguration {
+trait ActorsConfiguration[A] {
 
-  case class ActorDetails(path: String, name: Option[String], props: Props)
-
-  def actorDetails(clazz: Class[_ <: Actor]): Option[ActorDetails]
+  def actorDetails(clazz: Class[_ <: Actor]): Option[A]
 }
 
-trait ConfigurableActorProvider extends ActorProvider with HasContext with ActorsConfiguration {
+case class ActorDetails(path: String, name: Option[String], props: Props)
+
+trait ConfigurableActorProvider extends ActorProvider with ActorsConfiguration[ActorDetails] with HasContext {
 
   override def actorFor(clazz: Class[_ <: Actor]) =
     context.actorFor(pathFor(clazz))
@@ -42,12 +42,19 @@ trait ConfigurableActorProvider extends ActorProvider with HasContext with Actor
 
 trait DefaultActorProvider extends ConfigurableActorProvider with DefaultActorsConfiguration
 
-trait DefaultActorsConfiguration extends ActorsConfiguration {
+trait MapActorsConfiguration[A] extends ActorsConfiguration[A] {
+
+  def actorDetailsMap: Map[Class[_ <: Actor], A]
+  
+  override def actorDetails(clazz: Class[_ <: Actor]): Option[A] = actorDetailsMap.get(clazz)
+}
+
+trait DefaultActorsConfiguration extends MapActorsConfiguration[ActorDetails] {
 
   private def defaultRouter: RoundRobinRouter = new RoundRobinRouter(1)
 
-  override def actorDetails(clazz: Class[_ <: Actor]) = {
-    Map[Class[_ <: Actor], ActorDetails](
+  override def actorDetailsMap  = {
+    Map(
       (classOf[ServicesActor] -> ActorDetails("services", Some("services"),
         Props(new ServicesActor with DefaultActorProvider))),
       (classOf[UsersReadModelActor] -> ActorDetails("/user/services/usersReadModelActor", Some("usersReadModelActor"),
@@ -56,6 +63,6 @@ trait DefaultActorsConfiguration extends ActorsConfiguration {
         Props(new UsersWriteModelActor))),
       (classOf[AuthenticationActor] -> ActorDetails("/user/services/authenticationActor", Some("authenticationActor"),
         Props(new AuthenticationActor with DefaultActorProvider)))
-    ).get(clazz)
+    )
   }
 }
