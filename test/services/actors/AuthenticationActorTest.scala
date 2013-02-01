@@ -9,7 +9,7 @@ import concurrent.Await
 import domain.models.User
 import org.scalatest.matchers.ShouldMatchers
 import support.test.{EmptyActor, MockedActorProvider, TestSystem}
-import support.test.GivenSupport._
+import support.test.given
 
 class AuthenticationActorTest extends WordSpec with TestSystem with ShouldMatchers {
 

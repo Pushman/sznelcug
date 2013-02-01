@@ -3,7 +3,7 @@ package support.test
 import akka.actor.{ActorRef, Actor}
 import akka.testkit.TestActorRef
 
-object GivenSupport {
+trait GivenSupport {
 
   final class Given[A <: Actor](actor: TestActorRef[A]) {
 
