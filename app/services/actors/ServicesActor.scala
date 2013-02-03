@@ -5,9 +5,9 @@ import akka.actor.Actor
 class ServicesActor extends Actor {
   provider: ActorProvider =>
 
-  provider.createActor(classOf[UsersReadModelActor])
-  provider.createActor(classOf[UsersWriteModelActor])
-  provider.createActor(classOf[AuthenticationActor])
+  provider.createActor[UsersReadModelActor]
+  provider.createActor[UsersWriteModelActor]
+  provider.createActor[AuthenticationActor]
 
   override def receive: Receive = Actor.emptyBehavior
 }

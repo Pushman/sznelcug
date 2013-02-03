@@ -24,7 +24,7 @@ object Home extends Controller {
     def context = Akka.system
   }
 
-  provider.createActor(classOf[ServicesActor])
+  provider.createActor[ServicesActor]
 
   private val userForm = Form(
     mapping(
@@ -47,7 +47,7 @@ object Home extends Controller {
 
   def formValid(token: UsernamePasswordToken): Future[Result] = {
     implicit val timeout = akka.util.Timeout(5 seconds)
-    provider.actorFor(classOf[AuthenticationActor]) ? AuthorizationCommand(token) collect {
+    provider.actorFor[AuthenticationActor] ? AuthorizationCommand(token) collect {
       case AuthorizationSuccess(userCredentials) =>
         authorizationSuccess(token, userCredentials)
       case AuthorizationFailure() =>

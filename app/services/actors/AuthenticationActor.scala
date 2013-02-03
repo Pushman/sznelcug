@@ -12,8 +12,8 @@ class AuthenticationActor extends Actor {
 
   import play.api.libs.concurrent.Execution.Implicits.defaultContext
 
-  val usersReadActor = provider.actorFor(classOf[UsersReadModelActor])
-  val usersWriteActor = provider.actorFor(classOf[UsersWriteModelActor])
+  val usersReadActor = provider.actorFor[UsersReadModelActor]
+  val usersWriteActor = provider.actorFor[UsersWriteModelActor]
   implicit val timeout = akka.util.Timeout(5 seconds)
 
   override def receive = {

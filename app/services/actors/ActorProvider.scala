@@ -2,6 +2,7 @@ package services.actors
 
 import akka.actor.{ActorRefFactory, Props, ActorRef, Actor}
 import akka.routing.RoundRobinRouter
+import reflect.ClassTag
 
 trait HasContext {
 
@@ -10,9 +11,9 @@ trait HasContext {
 
 trait ActorProvider {
 
-  def actorFor(clazz: Class[_ <: Actor]): ActorRef
+  def actorFor[T <: Actor : ClassTag]: ActorRef
 
-  def createActor(clazz: Class[_ <: Actor]): ActorRef
+  def createActor[T <: Actor : ClassTag]: ActorRef
 }
 
 trait ActorsConfiguration[A] {
@@ -24,11 +25,15 @@ case class ActorDetails(path: String, name: Option[String], props: Props)
 
 trait ConfigurableActorProvider extends ActorProvider with ActorsConfiguration[ActorDetails] with HasContext {
 
-  override def actorFor(clazz: Class[_ <: Actor]) =
-    context.actorFor(pathFor(clazz))
+  override def actorFor[T <: Actor : ClassTag] =
+    context.actorFor(pathFor(classFromTag))
 
-  override def createActor(clazz: Class[_ <: Actor]) =
-    nameFor(clazz).map(name => context.actorOf(propsFor(clazz), name)).getOrElse(context.actorOf(propsFor(clazz)))
+  override def createActor[T <: Actor : ClassTag] =
+    nameFor(classFromTag).map(name => context.actorOf(propsFor(classFromTag), name)).
+      getOrElse(context.actorOf(propsFor(classFromTag)))
+
+  private def classFromTag[T <: Actor : ClassTag]: Class[_ <: Actor] =
+    implicitly[ClassTag[T]].runtimeClass.asInstanceOf[Class[_ <: Actor]]
 
   private def nameFor = getFromConfiguration(_.name) _
 
@@ -45,7 +50,7 @@ trait DefaultActorProvider extends ConfigurableActorProvider with DefaultActorsC
 trait MapActorsConfiguration[A] extends ActorsConfiguration[A] {
 
   def actorDetailsMap: Map[Class[_ <: Actor], A]
-  
+
   override def actorDetails(clazz: Class[_ <: Actor]): Option[A] = actorDetailsMap.get(clazz)
 }
 
@@ -53,7 +58,7 @@ trait DefaultActorsConfiguration extends MapActorsConfiguration[ActorDetails] {
 
   private def defaultRouter: RoundRobinRouter = new RoundRobinRouter(1)
 
-  override def actorDetailsMap  = {
+  override def actorDetailsMap = {
     Map(
       (classOf[ServicesActor] -> ActorDetails("services", Some("services"),
         Props(new ServicesActor with DefaultActorProvider))),
