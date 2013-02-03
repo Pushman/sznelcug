@@ -1,8 +1,9 @@
-package services.actors
+package services.actors.support
 
 import akka.actor.{ActorRefFactory, Props, ActorRef, Actor}
 import akka.routing.RoundRobinRouter
 import reflect.ClassTag
+import services.actors.{AuthenticationActor, UsersWriteModelActor, UsersReadModelActor, ServicesActor}
 
 trait HasContext {
 

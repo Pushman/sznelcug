@@ -1,5 +1,7 @@
 package services.actors
 
+import _root_.support.test.given
+import _root_.support.test.{MockedActorProvider, EmptyActor, TestSystem}
 import org.scalatest.WordSpec
 import akka.actor.ActorRef
 import akka.testkit.TestActorRef
@@ -8,8 +10,7 @@ import concurrent.duration._
 import concurrent.Await
 import domain.models.User
 import org.scalatest.matchers.ShouldMatchers
-import support.test.{EmptyActor, MockedActorProvider, TestSystem}
-import support.test.given
+import support.MapActorsConfiguration
 
 class AuthenticationActorTest extends WordSpec with TestSystem with ShouldMatchers {
 

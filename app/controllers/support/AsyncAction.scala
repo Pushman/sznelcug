@@ -1,4 +1,4 @@
-package controllers.helpers
+package controllers.support
 
 import play.api.libs.concurrent.Akka
 import concurrent.Future

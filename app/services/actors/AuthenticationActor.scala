@@ -6,6 +6,7 @@ import domain.models.User
 import concurrent.duration._
 
 import akka.pattern.ask
+import support.ActorProvider
 
 class AuthenticationActor extends Actor {
   provider: Actor with ActorProvider =>

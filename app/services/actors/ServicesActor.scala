@@ -1,6 +1,7 @@
 package services.actors
 
 import akka.actor.Actor
+import support.ActorProvider
 
 class ServicesActor extends Actor {
   provider: ActorProvider =>

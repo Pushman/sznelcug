@@ -1,7 +1,7 @@
 package controllers
 
-import helpers.AsyncAction
-import helpers.AsyncAction._
+import support.AsyncAction
+import support.AsyncAction._
 import play.api.mvc._
 import play.api.data._
 import play.api.data.Forms._
@@ -13,6 +13,7 @@ import services.actors.AuthorizationFailure
 
 import akka.pattern.ask
 import concurrent.duration._
+import services.actors.support.{DefaultActorProvider, HasContext}
 
 object Home extends Controller {
 

@@ -1,8 +1,8 @@
 package support.test
 
-import services.actors.{ActorsConfiguration, ActorProvider}
 import akka.actor.{ActorRef, Actor}
 import reflect.ClassTag
+import services.actors.support.{ActorsConfiguration, ActorProvider}
 
 
 trait MockedActorProvider extends ActorProvider with ActorsConfiguration[ActorRef] {
