@@ -23,19 +23,22 @@ class AuthenticationActor extends Actor {
   }
 
   private def readUser(replyTo: ActorRef): Receive = {
-    case UserNotFound(_) ⇒
+    case UserNotFound() ⇒
       replyTo ! AuthorizationFailure()
 
-    case UserFound(user) ⇒
-      usersWriteActor ? UpdateUser(newSessionKeyFor(user)) collect userUpdated(replyTo)
+    case UserFound(user) ⇒ {
+      val updatedUser = userWithNewSessionKey(user)
+      val credentials = UserCredentials(updatedUser.sessionKey)
+      usersWriteActor ? UpdateUser(updatedUser) collect userUpdated(replyTo, credentials)
+    }
   }
 
-  private def userUpdated(replyTo: ActorRef): Receive = {
-    case UserUpdated(user) ⇒
-      replyTo ! AuthorizationSuccess(UserCredentials(user.sessionKey))
+  private def userUpdated(replyTo: ActorRef, credentials: UserCredentials): Receive = {
+    case UserUpdated() ⇒
+      replyTo ! AuthorizationSuccess(credentials)
   }
 
-  private def newSessionKeyFor(user: User) =
+  private def userWithNewSessionKey(user: User) =
     user.update(sessionKey = UUID.randomUUID().toString)
 }
 

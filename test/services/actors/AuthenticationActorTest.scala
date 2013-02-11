@@ -38,7 +38,7 @@ class AuthenticationActorTest extends WordSpec with TestSystem with ShouldMatche
   "Authentication actor" must {
     "not allow to authenticate User that does not exist" in {
       mockedReadActor given (sender => {
-        case ReadUser(lookup) => sender ! UserNotFound(lookup)
+        case ReadUser(lookup) => sender ! UserNotFound()
       })
 
       val response = Await.result(authenticationActor ? AuthorizationCommand(invalidToken), 1 seconds)
@@ -46,16 +46,20 @@ class AuthenticationActorTest extends WordSpec with TestSystem with ShouldMatche
       response should equal(AuthorizationFailure())
     }
     "allow to authenticate User that exists" in {
+      var updatedUser: User = null
       mockedReadActor given (sender => {
         case ReadUser(lookup) => sender ! UserFound(validUser)
       })
       mockedWriteActor given (sender => {
-        case UpdateUser(user) => sender ! UserUpdated(userWithUpdatedSessionKey)
+        case UpdateUser(user) => {
+          updatedUser = user
+          sender ! UserUpdated()
+        }
       })
 
       val response = Await.result(authenticationActor ? AuthorizationCommand(validToken), 1 seconds)
 
-      response should equal(AuthorizationSuccess(UserCredentials(userWithUpdatedSessionKey.sessionKey)))
+      response should equal(AuthorizationSuccess(UserCredentials(updatedUser.sessionKey)))
     }
   }
 }

@@ -64,11 +64,11 @@ trait DefaultActorsConfiguration extends MapActorsConfiguration[ActorDetails] {
       (classOf[ServicesActor] -> ActorDetails("services", Some("services"),
         Props(new ServicesActor with DefaultActorProvider))),
       (classOf[UsersReadModelActor] -> ActorDetails("/user/services/usersReadModelActor", Some("usersReadModelActor"),
-        Props(new UsersReadModelActor).withRouter(defaultRouter))),
+        Props(new UsersReadModelActor with LoggedActor).withRouter(defaultRouter))),
       (classOf[UsersWriteModelActor] -> ActorDetails("/user/services/usersWriteModelActor", Some("usersWriteModelActor"),
         Props(new UsersWriteModelActor))),
       (classOf[AuthenticationActor] -> ActorDetails("/user/services/authenticationActor", Some("authenticationActor"),
-        Props(new AuthenticationActor with DefaultActorProvider)))
+        Props(new AuthenticationActor with DefaultActorProvider with LoggedActor)))
     )
   }
 }

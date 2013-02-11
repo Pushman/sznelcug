@@ -24,8 +24,6 @@ object ApplicationBuild extends Build {
     lessEntryPoints <<= baseDirectory(customLessEntryPoints),
     resolvers := Seq(eligosource),
     libraryDependencies ++= List(
-      "com.h2database" % "h2" % "1.3.166",
-      "org.squeryl" % "squeryl_2.10.0-RC1" % squeryl,
       "com.typesafe.akka" %% "akka-actor" % akka withSources(),
       "com.typesafe.akka" %% "akka-testkit" % akka withSources(),
       "org.eligosource" %% "eventsourced" % eventsourced withSources(),
