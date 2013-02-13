@@ -25,5 +25,3 @@ trait ConfigurableActorProvider extends ActorProvider {
   private def classFromTag[T <: Actor : ClassTag]: Class[_ <: Actor] =
     implicitly[ClassTag[T]].runtimeClass.asInstanceOf[Class[_ <: Actor]]
 }
-
-trait DefaultActorProvider extends ConfigurableActorProvider with DefaultActorsConfiguration with HasSystem

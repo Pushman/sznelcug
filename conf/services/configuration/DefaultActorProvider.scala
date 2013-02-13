@@ -1,0 +1,5 @@
+package services.configuration
+
+import services.actors.support.{ConfigurableActorProvider, HasSystem}
+
+trait DefaultActorProvider extends ConfigurableActorProvider with DefaultActorsConfiguration with HasSystem

@@ -1,0 +1,8 @@
+package services.configuration
+
+import services.actors.support.{EventsourcedExtension, ConfigurableEventsourcedProcessorsProvider, HasSystem}
+
+trait DefaultEventsourcedProcessorsProvider extends ConfigurableEventsourcedProcessorsProvider
+with DefaultActorsConfiguration
+with HasSystem
+with EventsourcedExtension

@@ -13,7 +13,8 @@ import services.actors.AuthorizationFailure
 
 import akka.pattern.ask
 import concurrent.duration._
-import services.actors.support.{DefaultActorProvider, HasContext}
+import services.actors.support.HasContext
+import services.configuration.DefaultActorProvider
 
 object Home extends Controller {
 
@@ -23,6 +24,7 @@ object Home extends Controller {
 
   val provider = new DefaultActorProvider with HasContext {
     def context = Akka.system
+
     def system = Akka.system
   }
 

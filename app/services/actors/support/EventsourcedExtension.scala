@@ -28,8 +28,3 @@ trait ConfigurableEventsourcedProcessorsProvider extends EventsourcedProcessorsP
   private def classFromTag[T <: Actor : ClassTag]: Class[_ <: Actor] =
     implicitly[ClassTag[T]].runtimeClass.asInstanceOf[Class[_ <: Actor]]
 }
-
-trait DefaultEventsourcedProcessorsProvider extends ConfigurableEventsourcedProcessorsProvider
-with DefaultActorsConfiguration
-with HasSystem
-with EventsourcedExtension
