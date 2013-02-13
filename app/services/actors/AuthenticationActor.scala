@@ -1,8 +1,8 @@
 package services.actors
 
+import _root_.support.datetime.Clock
 import akka.actor.{ActorRef, Actor}
 import java.util.UUID
-import domain.models.User
 import concurrent.duration._
 
 import akka.pattern.ask
@@ -10,7 +10,7 @@ import support.{EventsourcedProcessorsProvider, ActorProvider}
 import org.eligosource.eventsourced.core.Message
 
 class AuthenticationActor extends Actor {
-  provider: Actor with ActorProvider with EventsourcedProcessorsProvider =>
+  provider: Actor with ActorProvider with EventsourcedProcessorsProvider with Clock =>
 
   import play.api.libs.concurrent.Execution.Implicits.defaultContext
 
@@ -28,7 +28,7 @@ class AuthenticationActor extends Actor {
       replyTo ! AuthorizationFailure()
 
     case UserFound(user) ⇒ {
-      val updatedUser = userWithNewSessionKey(user)
+      val updatedUser = user.update(sessionKey = generateNewSessionKey, lastLoginDate = Some(now))
       val credentials = UserCredentials(updatedUser.sessionKey)
       usersWriteActor ? Message(UpdateUser(updatedUser)) collect userUpdated(replyTo, credentials)
     }
@@ -39,8 +39,9 @@ class AuthenticationActor extends Actor {
       replyTo ! AuthorizationSuccess(credentials)
   }
 
-  private def userWithNewSessionKey(user: User) =
-    user.update(sessionKey = UUID.randomUUID().toString)
+  def generateNewSessionKey: String = {
+    UUID.randomUUID().toString
+  }
 }
 
 trait AuthenticationToken

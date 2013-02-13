@@ -1,4 +1,4 @@
 package support
 
-package object test extends GivenSupport {
+package object test extends GivenSupport with BlockingAskSupport {
 }

@@ -1,29 +1,26 @@
 package services.actors
 
+import _root_.support.datetime.Clock
 import _root_.support.test._
 import org.scalatest.WordSpec
 import akka.actor.ActorRef
 import akka.testkit.TestActorRef
-import akka.pattern.ask
-import concurrent.duration._
-import concurrent.Await
 import domain.models.User
 import org.scalatest.matchers.ShouldMatchers
 import support._
 import org.eligosource.eventsourced.core.Message
+import org.joda.time.DateTime
 
 class AuthenticationActorTest extends WordSpec with TestSystem with ShouldMatchers {
 
-  implicit val timeout = akka.util.Timeout(5 seconds)
+  import AuthenticationActorTest._
 
-  val validToken = UsernamePasswordToken("username", "password")
-  val validUser = User(validToken.username, validToken.password)
-  val invalidToken = UsernamePasswordToken("invalid", "password")
+  private val validToken = UsernamePasswordToken("username", "password")
+  private val validUser = User(validToken.username, validToken.password)
+  private val invalidToken = UsernamePasswordToken("invalid", "password")
 
-  val userWithUpdatedSessionKey = User(0, validToken.username, validToken.password, "sessionKey")
-
-  val mockedReadActor = TestActorRef(new EmptyActor)
-  val mockedWriteActor = TestActorRef(new EmptyActor)
+  private val mockedReadActor = TestActorRef(new EmptyActor)
+  private val mockedWriteActor = TestActorRef(new EmptyActor)
 
   trait ActorMocks extends MapActorsConfiguration[ActorRef] {
 
@@ -34,34 +31,54 @@ class AuthenticationActorTest extends WordSpec with TestSystem with ShouldMatche
   }
 
   val authenticationActor = TestActorRef(new AuthenticationActor
-    with MockedActorProvider with MockedEventsourcedProcessorsProvider with ActorMocks)
+    with MockedActorProvider with MockedEventsourcedProcessorsProvider with ActorMocks with Clock {
+    override def now = LAST_LOGIN_DATE
+  })
 
-  "Authentication actor" must {
-    "not allow to authenticate User that does not exist" in {
-      mockedReadActor given (sender => {
-        case ReadUser(lookup) => sender ! UserNotFound()
-      })
+  "Authentication Actor" when {
+    "passed AuthorizationCommand from not existing User" must {
+      "forbid authentication of that User" in {
+        mockedReadActor given (sender => {
+          case ReadUser(lookup) => sender ! UserNotFound()
+        })
 
-      val response = Await.result(authenticationActor ? AuthorizationCommand(invalidToken), 1 seconds)
+        val response = authenticationActor ?? AuthorizationCommand(invalidToken)
 
-      response should equal(AuthorizationFailure())
+        response should equal(AuthorizationFailure())
+      }
     }
-    "allow to authenticate User that exists" in {
-      var updatedUser: User = null
-      mockedReadActor given (sender => {
-        case ReadUser(lookup) => sender ! UserFound(validUser)
-      })
-      mockedWriteActor given (sender => {
-        case msg: Message => {
-          updatedUser = msg.event.asInstanceOf[UpdateUser].user
-          sender ! UserUpdated()
-        }
-      })
+    "passed AuthorizationCommand from existing User" must {
+      "allow to authenticate User that exists" in {
+        val updatedUser = givenAuthenticatedUser
 
-      val response = Await.result(authenticationActor ? AuthorizationCommand(validToken), 1 seconds)
+        val response = authenticationActor ?? AuthorizationCommand(validToken)
 
-      updatedUser should not be (null)
-      response should equal(AuthorizationSuccess(UserCredentials(updatedUser.sessionKey)))
+        response should equal(AuthorizationSuccess(UserCredentials(updatedUser().sessionKey)))
+      }
+      "update that User's last login date" in {
+        val updatedUser = givenAuthenticatedUser
+
+        authenticationActor ?? AuthorizationCommand(validToken)
+
+        updatedUser().lastLoginDate should be(Some(LAST_LOGIN_DATE))
+      }
+      def givenAuthenticatedUser = {
+        mockedReadActor given (sender => {
+          case ReadUser(lookup) => sender ! UserFound(validUser)
+        })
+        val userCaptor = Captor[User]()
+        mockedWriteActor given (sender => {
+          case msg: Message => {
+            userCaptor.caught(msg.event.asInstanceOf[UpdateUser].user)
+            sender ! UserUpdated()
+          }
+        })
+        userCaptor
+      }
     }
   }
+}
+
+object AuthenticationActorTest {
+  val LAST_LOGIN_DATE = new DateTime(2010, 1, 1, 0, 0)
 }

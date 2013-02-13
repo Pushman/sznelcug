@@ -9,6 +9,7 @@ import services.actors.support.ActorDetails
 import scala.Some
 import concurrent.stm.Ref
 import domain.models.User
+import support.datetime.RealClock
 
 trait DefaultActorsConfiguration extends ActorDetailsActorsConfiguration with MapActorsConfiguration[ActorDetails] {
   this: HasSystem =>
@@ -19,19 +20,20 @@ trait DefaultActorsConfiguration extends ActorDetailsActorsConfiguration with Ma
 
   override def actorDetailsMap = {
     Map(
-      (classOf[ServicesActor] -> ActorDetails("services", Some("services"),
+      classOf[ServicesActor] -> ActorDetails("services", Some("services"),
         Props(new ServicesActor with DefaultActorProvider {
           lazy val system = DefaultActorsConfiguration.this.system
-        }))),
-      (classOf[UsersReadModelActor] -> ActorDetails("/user/services/usersReadModelActor", Some("usersReadModelActor"),
-        Props(new UsersReadModelActor(users.single)).withRouter(defaultRouter))),
-      (classOf[UsersWriteModelActor] -> ActorDetails("/user/services/usersWriteModelActor", Some("usersWriteModelActor"),
+        })),
+      classOf[UsersReadModelActor] -> ActorDetails("/user/services/usersReadModelActor", Some("usersReadModelActor"),
+        Props(new UsersReadModelActor(users.single)).withRouter(defaultRouter)),
+      classOf[UsersWriteModelActor] -> ActorDetails("/user/services/usersWriteModelActor", Some("usersWriteModelActor"),
         Props(new UsersWriteModelActor with Receiver with Eventsourced {
           val id = 1
-        }))), (classOf[AuthenticationActor] -> ActorDetails("/user/services/authenticationActor", Some("authenticationActor"),
-        Props(new AuthenticationActor with DefaultActorProvider with DefaultEventsourcedProcessorsProvider {
+        })),
+      classOf[AuthenticationActor] -> ActorDetails("/user/services/authenticationActor", Some("authenticationActor"),
+        Props(new AuthenticationActor with DefaultActorProvider with DefaultEventsourcedProcessorsProvider with RealClock {
           lazy val system = DefaultActorsConfiguration.this.system
-        })))
+        }))
     )
   }
 }
