@@ -7,8 +7,13 @@ trait GivenSupport {
 
   final class Given[A <: Actor](actor: TestActorRef[A]) {
 
-    def given(behavior: Actor.Receive) {
-      actor.underlying.become(behavior)
+    def given(behavior: PartialFunction[Any, Any]) {
+      actor.underlying.become(respondToSender(behavior))
+    }
+
+    def respondToSender(behavior: PartialFunction[Any, Any]): Actor.Receive = {
+      case msg if behavior.isDefinedAt(msg) =>
+        actor.underlying.sender ! behavior(msg)
     }
 
     def given(behavior: ActorRef => Actor.Receive) {
