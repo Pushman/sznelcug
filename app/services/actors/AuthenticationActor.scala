@@ -6,15 +6,15 @@ import domain.models.User
 import concurrent.duration._
 
 import akka.pattern.ask
-import support.ActorProvider
+import support.{EventsourcedProcessorsProvider, ActorProvider}
 
 class AuthenticationActor extends Actor {
-  provider: Actor with ActorProvider =>
+  provider: Actor with ActorProvider with EventsourcedProcessorsProvider =>
 
   import play.api.libs.concurrent.Execution.Implicits.defaultContext
 
   val usersReadActor = provider.actorFor[UsersReadModelActor]
-  val usersWriteActor = provider.actorFor[UsersWriteModelActor]
+  val usersWriteActor = provider.processorOf[UsersWriteModelActor]
   implicit val timeout = akka.util.Timeout(5 seconds)
 
   override def receive = {

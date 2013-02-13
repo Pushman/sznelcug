@@ -1,7 +1,6 @@
 package services.actors
 
-import _root_.support.test.given
-import _root_.support.test.{MockedActorProvider, EmptyActor, TestSystem}
+import _root_.support.test._
 import org.scalatest.WordSpec
 import akka.actor.ActorRef
 import akka.testkit.TestActorRef
@@ -10,7 +9,7 @@ import concurrent.duration._
 import concurrent.Await
 import domain.models.User
 import org.scalatest.matchers.ShouldMatchers
-import support.MapActorsConfiguration
+import support._
 
 class AuthenticationActorTest extends WordSpec with TestSystem with ShouldMatchers {
 
@@ -33,7 +32,8 @@ class AuthenticationActorTest extends WordSpec with TestSystem with ShouldMatche
     )
   }
 
-  val authenticationActor = TestActorRef(new AuthenticationActor with MockedActorProvider with ActorMocks)
+  val authenticationActor = TestActorRef(new AuthenticationActor 
+    with MockedActorProvider with MockedEventsourcedProcessorsProvider with ActorMocks)
 
   "Authentication actor" must {
     "not allow to authenticate User that does not exist" in {
@@ -59,6 +59,7 @@ class AuthenticationActorTest extends WordSpec with TestSystem with ShouldMatche
 
       val response = Await.result(authenticationActor ? AuthorizationCommand(validToken), 1 seconds)
 
+      updatedUser should not be(null)
       response should equal(AuthorizationSuccess(UserCredentials(updatedUser.sessionKey)))
     }
   }

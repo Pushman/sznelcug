@@ -23,6 +23,7 @@ object Home extends Controller {
 
   val provider = new DefaultActorProvider with HasContext {
     def context = Akka.system
+    def system = Akka.system
   }
 
   provider.createActor[ServicesActor]

@@ -6,9 +6,10 @@ import support.ActorProvider
 class ServicesActor extends Actor {
   provider: ActorProvider =>
 
-  provider.createActor[UsersReadModelActor]
-  provider.createActor[UsersWriteModelActor]
-  provider.createActor[AuthenticationActor]
+  override def preStart() {
+    provider.createActor[UsersReadModelActor]
+    provider.createActor[AuthenticationActor]
+  }
 
   override def receive: Receive = Actor.emptyBehavior
 }
