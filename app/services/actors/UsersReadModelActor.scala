@@ -2,10 +2,9 @@ package services.actors
 
 import akka.actor.Actor
 import domain.models.User
+import concurrent.stm.Ref.View
 
-class UsersReadModelActor extends Actor {
-
-  private val users: Vector[User] = Vector(User("Admin", "admin"))
+class UsersReadModelActor(users: View[Vector[User]]) extends Actor {
 
   def receive = {
     case ReadUser(lookup) =>
@@ -13,7 +12,7 @@ class UsersReadModelActor extends Actor {
   }
 
   private def readUser(lookup: UserLookup) =
-    users find oneThatMatchesLookup(lookup) match {
+    users() find oneThatMatchesLookup(lookup) match {
       case Some(user) => UserFound(user)
       case None => UserNotFound()
     }

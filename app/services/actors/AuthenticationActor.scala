@@ -7,6 +7,7 @@ import concurrent.duration._
 
 import akka.pattern.ask
 import support.{EventsourcedProcessorsProvider, ActorProvider}
+import org.eligosource.eventsourced.core.Message
 
 class AuthenticationActor extends Actor {
   provider: Actor with ActorProvider with EventsourcedProcessorsProvider =>
@@ -29,7 +30,7 @@ class AuthenticationActor extends Actor {
     case UserFound(user) ⇒ {
       val updatedUser = userWithNewSessionKey(user)
       val credentials = UserCredentials(updatedUser.sessionKey)
-      usersWriteActor ? UpdateUser(updatedUser) collect userUpdated(replyTo, credentials)
+      usersWriteActor ? Message(UpdateUser(updatedUser)) collect userUpdated(replyTo, credentials)
     }
   }
 

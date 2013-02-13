@@ -10,6 +10,7 @@ import concurrent.Await
 import domain.models.User
 import org.scalatest.matchers.ShouldMatchers
 import support._
+import org.eligosource.eventsourced.core.Message
 
 class AuthenticationActorTest extends WordSpec with TestSystem with ShouldMatchers {
 
@@ -32,7 +33,7 @@ class AuthenticationActorTest extends WordSpec with TestSystem with ShouldMatche
     )
   }
 
-  val authenticationActor = TestActorRef(new AuthenticationActor 
+  val authenticationActor = TestActorRef(new AuthenticationActor
     with MockedActorProvider with MockedEventsourcedProcessorsProvider with ActorMocks)
 
   "Authentication actor" must {
@@ -51,15 +52,15 @@ class AuthenticationActorTest extends WordSpec with TestSystem with ShouldMatche
         case ReadUser(lookup) => sender ! UserFound(validUser)
       })
       mockedWriteActor given (sender => {
-        case UpdateUser(user) => {
-          updatedUser = user
+        case msg: Message => {
+          updatedUser = msg.event.asInstanceOf[UpdateUser].user
           sender ! UserUpdated()
         }
       })
 
       val response = Await.result(authenticationActor ? AuthorizationCommand(validToken), 1 seconds)
 
-      updatedUser should not be(null)
+      updatedUser should not be (null)
       response should equal(AuthorizationSuccess(UserCredentials(updatedUser.sessionKey)))
     }
   }

@@ -7,11 +7,15 @@ import akka.actor.Props
 import org.eligosource.eventsourced.core.{Eventsourced, Receiver}
 import services.actors.support.ActorDetails
 import scala.Some
+import concurrent.stm.Ref
+import domain.models.User
 
 trait DefaultActorsConfiguration extends ActorDetailsActorsConfiguration with MapActorsConfiguration[ActorDetails] {
   this: HasSystem =>
 
   private def defaultRouter: RoundRobinRouter = new RoundRobinRouter(1)
+
+  private lazy val users = Ref(Vector(User("Admin", "admin")))
 
   override def actorDetailsMap = {
     Map(
@@ -20,7 +24,7 @@ trait DefaultActorsConfiguration extends ActorDetailsActorsConfiguration with Ma
           lazy val system = DefaultActorsConfiguration.this.system
         }))),
       (classOf[UsersReadModelActor] -> ActorDetails("/user/services/usersReadModelActor", Some("usersReadModelActor"),
-        Props(new UsersReadModelActor).withRouter(defaultRouter))),
+        Props(new UsersReadModelActor(users.single)).withRouter(defaultRouter))),
       (classOf[UsersWriteModelActor] -> ActorDetails("/user/services/usersWriteModelActor", Some("usersWriteModelActor"),
         Props(new UsersWriteModelActor with Receiver with Eventsourced {
           val id = 1
